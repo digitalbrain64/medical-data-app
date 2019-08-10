@@ -1,41 +1,48 @@
 const express = require('express');
 const request = require('request');
-const mysql = request('mysql');
+const mysql = require('mysql');
 var nodemailer = require('nodemailer');
 
-const service_email = "danik1991.dk@gmail.com";
-const service_pass = "danik1991";
+var mySqlConnString = "mysql://bd60400816cf64:804ba615@us-cdbr-iron-east-02.cleardb.net/heroku_9a8e608802085ff?reconnect=true";
+
+const mySqlPool = mysql.createPool("mysql://bd60400816cf64:804ba615@us-cdbr-iron-east-02.cleardb.net/heroku_9a8e608802085ff?reconnect=true");
+const service_email = "globalsostracker@mail.ru";
+const service_pass = "kogan15011991";
 
 const port = process.env.PORT || 3001;
 
 const app = express();
 
+var medicalRecord = null;
+
 app.get('/getAccessKey', (req, res, next)=>{
-    var accessKey = req.query.key;
-    var employee_email = req.query.user_email;
-    var employee_access_password = req.query.pass;
+    //var accessKey = req.query.key;
+    var employee_email = req.query.e;
+    var employee_access_password = req.query.p;
 
     var url = `https://dbrainz-flora-server-app.herokuapp.com/getUserData?e=${employee_email}&p=${employee_access_password}`;
 
     request(url, (error, response, body)=>{
         if(!error && response.statusCode === 200){
-          var results = JSON.stringify(body);
+          var results = JSON.parse(body);
           if(results.length == 0)
             res.send({
                 error: "user not found"
             });
           else{
-              if(results[0].user_priv != '5')
+              console.log(results[0]);
+              
+              if(results.user_priv != 5)
                 res.send({
                     error: "user does not have access to medical data"
                 });
               else{
-                sendAccessKey(employee_email);
-                res.send({
-                    status: "OK",
-                    access: "email with access key was sent to employee email",
-                    access_key_timeout: "you access key will be valid for 1 hour"
-                });
+                if(sendAccessKey(employee_email,employee_access_password));
+                    res.send({
+                        status: "OK",
+                        access: "email with access key was sent to employee email",
+                        access_key_timeout: "you access key will be valid for 1 hour"
+                    });
               }
           }
         }
@@ -45,41 +52,83 @@ app.get('/getAccessKey', (req, res, next)=>{
 })
 
 app.get('/getMedicalData', (req, res, next)=>{
-    var accessKey = req.query.key;
-    var employee_email = req.query.user_email;
-    var data_request_id = req.query.medical_id;
-    var employee_access_password = req.query.pass;
+    var accessKey = req.query.k;
+    var employee_email = req.query.e;
+    var data_request_id = req.query.mi;
+    var employee_access_password = req.query.p;
 
 
-    var sql = `SELECT * FROM temp_user_access WHERE access_email='${employee_email}' AND access_pass='${employee_access_password}' AND key=${accessKey}`;
-        mysql.query(sql, function (error, result, fields) {
-            if (error)
-                throw error;
-            else{
-                if(result.length == 0){
-                    res.send({
-                        error: "access key is invalid / access entry not found"
-                    });
-                }
-                else{
-                    mysql.query(`SELECT * FROM medical_data WHERE id=${data_request_id}`, function(error, result,fields){
-                        if(error)
-                          throw error;
-                        else{
-                            res.send(JSON.stringify(result));
-                        }
-                    })
-                }
+    var sql = `SELECT * FROM temp_user_access WHERE access_email='${employee_email}' AND access_pass='${employee_access_password}' AND access_key='${accessKey}'`;
+    mySqlPool.query(sql, function (error, result, fields) {
+        if (error)
+            throw error;
+        else{
+            if(result.length == 0){
+                res.send({
+                    error: "access key is invalid / bad access"
+                });
             }
-        });
-
-
+            else{
+                getMedicalRecord(function(err, data){
+                    if(err)
+                      res.send({error: 'database error'})
+                    else{
+                        // var ids = data.patient_contacts.split(',');
+                        // for(var i = 0; i<ids.length; i++){
+                        //     getContacts(function(error, data){
+                        //         if(error)
+                        //             console.log(error);
+                                  
+                        //         else{
+                        //             console.log(data);
+                                    
+                        //         }
+                        //     },ids[i])
+                        // }
+                        res.send(data);
+                        
+                    }
+                      
+                    
+                },data_request_id)
+                
+            }
+        }
+    })
 })
 
+function getContacts(callback, contacts_id){
+    mySqlPool.query(`SELECT * FROM patients_contact_data WHERE contact_id=${contacts_id}`, function(error, result, fields){
+        if(error)
+          throw error
+        else{
+            callback(error, result);
+        }
+    })
+}
+
+function getMedicalRecord(callback, medical_id){
+    mySqlPool.query(`SELECT * FROM patient_general_data WHERE patient_id=${medical_id}`, function(error, result,fields){
+        if(error)
+            throw error;
+        else{
+            if(result.length == 0)
+                callback(error, {err: 'medical record not found'});
+                
+            else{
+                callback(error, result[0])
+            }
+        }
+    })
+}
+
 function sendAccessKey(employee_email, employee_access_password){
+    
     var accessKey = makeAccessKey(24);
+    console.log(`Email: ${employee_email}, pass: ${employee_access_password}, key: ${accessKey}`);
+
     var transporter = nodemailer.createTransport({
-        service: 'gmail',
+        service: 'mail.ru',
         auth: {
           user: service_email,
           pass: service_pass
@@ -96,26 +145,28 @@ function sendAccessKey(employee_email, employee_access_password){
           console.log(error);
         } else {
           console.log('Email sent: ' + info.response);
-          var sql = `INSERT INTO temp_user_access (access_email, access_password, key, ttl)
-          VALUES(${employee_email}, ${employee_access_password}, ${accessKey}, 3600)`;
-          mysql.query(sql, function(error, result, fields){
-              if(error)
+          var sql = `INSERT INTO temp_user_access (access_key, access_email, access_pass) VALUES ("${accessKey}", "${employee_email}", "${employee_access_password}");`;
+          mySqlPool.query(sql, function(error, result, fields){
+              if(error){
                 throw error;
+              }
               else
                 console.log("temporary user created");
           })
           setTimeout(function(){
-              var sql = `DELETE FROM temp_user_access WHERE key = ${accessKey}`;
-              mysql.query(sql, function(error, result, fields){
+              var sql = `DELETE FROM temp_user_access WHERE access_key = '${accessKey}'`;
+              mySqlPool.query(sql, function(error, result, fields){
                   if(error)
                     throw error;
                   else
                     console.log(`key ${accessKey} is dead`);
                     
               })
-          },10000); // 8 sec
+          },3600000); // 1 hour
         }
     });
+
+    return true;
 
 
 }
