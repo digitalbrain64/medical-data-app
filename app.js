@@ -13,18 +13,26 @@ const app = express();
 
 app.get('/getAccessKey', (req, res, next)=>{
     //var accessKey = req.query.key;
+    if(!req.query.e || !req.query.p){
+        res.send([{
+            status: "error",
+            message: "please provide email and password"
+        }])
+    }
+    else{
+
+    
     var employee_email = req.query.e;
     var employee_access_password = req.query.p;
-
     var url = `https://dbrainz-flora-server-app.herokuapp.com/getUserData?e=${employee_email}&p=${employee_access_password}`;
 
     request(url, (error, response, body)=>{
         if(!error && response.statusCode === 200){
           var results = JSON.parse(body);
           if(results.length == 0)
-            res.send({
+            res.send([{
                 error: "user not found"
-            });
+            }]);
           else{
               console.log(results[0]);
               
@@ -34,20 +42,27 @@ app.get('/getAccessKey', (req, res, next)=>{
                 });
               else{
                 if(sendAccessKey(employee_email,employee_access_password));
-                    res.send({
+                    res.send([{
                         status: "OK",
                         access: "email with access key was sent to employee email",
                         access_key_timeout: "you access key will be valid for 1 hour"
-                    });
+                    }]);
               }
           }
         }
         else
           throw error;
     });
+}
 })
 
 app.get('/getMedicalData', (req, res, next)=>{
+    if(!req.query.k || !req.query.e || !req.query.mi){
+        res.send([{
+            status : "error",
+            message : "missing credential"
+        }])
+    }
     var accessKey = req.query.k;
     var employee_email = req.query.e;
     var data_request_id = req.query.mi;
@@ -70,9 +85,9 @@ app.get('/getMedicalData', (req, res, next)=>{
             throw error;
         else{
             if(result.length == 0){
-                res.send({
+                res.send([{
                     error: "access key is invalid / bad access"
-                });
+                }]);
             }
             else{
                 database.query( `SELECT * FROM patient_general_data WHERE patient_id='${data_request_id}'` )
@@ -148,14 +163,14 @@ app.get('/getMedicalData', (req, res, next)=>{
                 } )
                 .catch( err => {
                     if(basic_data.length == 0){
-                        res.send({
+                        res.send([{
                             database_error: `no medical data found for patient : ${data_request_id}`
-                        });
+                        }]);
                     }
                     else{
-                        res.send({
+                        res.send([{
                             database_error: err
-                        })
+                        }])
                     }
                     
                 } );
