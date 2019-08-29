@@ -13,7 +13,7 @@ const app = express();
 
 app.get('/getAccessKey', (req, res, next)=>{
     //var accessKey = req.query.key;
-    if(!req.query.e || !req.query.p){
+    if(!req.query.e && !req.query.p){
         res.send([{
             status: "error",
             message: "please provide email and password"
