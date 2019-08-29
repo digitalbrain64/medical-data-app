@@ -24,7 +24,7 @@ app.get('/getAccessKey', (req, res, next)=>{
     
     var employee_email = req.query.e;
     var employee_access_password = req.query.p;
-    var url = `https://dbrainz-flora-server-app.herokuapp.com/getUserData?u=${employee_email}&p=${employee_access_password}`;
+    var url = `https://dbrainz-flora-server-app.herokuapp.com/getAppUserAccount?u=${employee_email}&p=${employee_access_password}`;
 
     request(url, (error, response, body)=>{
         if(!error && response.statusCode === 200){
