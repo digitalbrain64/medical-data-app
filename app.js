@@ -24,7 +24,7 @@ app.get('/getAccessKey', (req, res, next)=>{
     
     var employee_email = req.query.e;
     var employee_access_password = req.query.p;
-    var url = `https://dbrainz-flora-server-app.herokuapp.com/getUserData?e=${employee_email}&p=${employee_access_password}`;
+    var url = `https://dbrainz-flora-server-app.herokuapp.com/getUserData?u=${employee_email}&p=${employee_access_password}`;
 
     request(url, (error, response, body)=>{
         if(!error && response.statusCode === 200){
@@ -36,7 +36,7 @@ app.get('/getAccessKey', (req, res, next)=>{
           else{
               console.log(results[0]);
               
-              if(results.user_priv != 5)
+              if(results[0].user_priv != 5)
                 res.send({
                     error: "user does not have access to medical data"
                 });
@@ -57,15 +57,15 @@ app.get('/getAccessKey', (req, res, next)=>{
 })
 
 app.get('/getMedicalData', (req, res, next)=>{
-    if(!req.query.k || !req.query.e || !req.query.mi){
+    if(!req.query.key || !req.query.e || !req.query.user_id){
         res.send([{
             status : "error",
             message : "missing credential"
         }])
     }
-    var accessKey = req.query.k;
+    var accessKey = req.query.key;
     var employee_email = req.query.e;
-    var data_request_id = req.query.mi;
+    var data_request_id = req.query.user_id;
     var employee_access_password = req.query.p;
 
     var medicalRecord = [];
@@ -159,7 +159,7 @@ app.get('/getMedicalData', (req, res, next)=>{
                         patient_medical_notes : patient_notes,
                         patient_health_conditions : patient_conditions
                     }]
-                    res.send(medicalRecord[0]);
+                    res.send([medicalRecord[0]]);
                 } )
                 .catch( err => {
                     if(basic_data.length == 0){
