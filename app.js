@@ -13,47 +13,44 @@ const app = express();
 
 app.get('/getAccessKey', (req, res, next)=>{
     //var accessKey = req.query.key;
-    if(!req.query.e && !req.query.p){
+    if(req.query.e && req.query.p){
+        var employee_email = req.query.e;
+        var employee_access_password = req.query.p;
+        var url = `https://dbrainz-flora-server-app.herokuapp.com/getAppUserAccount?u=${employee_email}&p=${employee_access_password}`;
+        
+        request(url, (error, response, body)=>{
+            if(!error && response.statusCode === 200){
+                var results = JSON.parse(body);
+                if(results.length == 0)
+                res.send([{
+                    error: "user not found"
+                }]);
+                else{
+                    console.log(results[0]);
+                    if(results[0].user_priv != 5)
+                    res.send({
+                        error: "user does not have access to medical data"
+                    });
+                    else{
+                        if(sendAccessKey(employee_email,employee_access_password));
+                        res.send([{
+                            status: "OK",
+                            access: "email with access key was sent to employee email",
+                            access_key_timeout: "you access key will be valid for 1 hour"
+                        }]);
+                    }
+                }
+            }
+            else
+            throw error;
+        });
+    }
+    else{
         res.send([{
             status: "error",
             message: "please provide email and password"
         }])
     }
-    else{
-
-    
-    var employee_email = req.query.e;
-    var employee_access_password = req.query.p;
-    var url = `https://dbrainz-flora-server-app.herokuapp.com/getAppUserAccount?u=${employee_email}&p=${employee_access_password}`;
-
-    request(url, (error, response, body)=>{
-        if(!error && response.statusCode === 200){
-          var results = JSON.parse(body);
-          if(results.length == 0)
-            res.send([{
-                error: "user not found"
-            }]);
-          else{
-              console.log(results[0]);
-              
-              if(results[0].user_priv != 5)
-                res.send({
-                    error: "user does not have access to medical data"
-                });
-              else{
-                if(sendAccessKey(employee_email,employee_access_password));
-                    res.send([{
-                        status: "OK",
-                        access: "email with access key was sent to employee email",
-                        access_key_timeout: "you access key will be valid for 1 hour"
-                    }]);
-              }
-          }
-        }
-        else
-          throw error;
-    });
-}
 })
 
 app.get('/getMedicalData', (req, res, next)=>{
