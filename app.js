@@ -71,7 +71,6 @@ app.get('/getMedicalData', (req, res, next)=>{
     var medicalRecord = [];
 
     var basic_data = null;
-    var patient_contacts = [];
     var patient_conditions = null;
     var patient_personal_doctors = null;
     var patient_notes = null;
@@ -97,14 +96,6 @@ app.get('/getMedicalData', (req, res, next)=>{
                 })
                 .then( rows => {
                     patient_prescriptions = rows;
-                    return database.query( `SELECT patient_contact_relation.relation ,contacts.contact_first_name, contacts.contact_last_name, contacts.contact_address, contacts.contact_phone_number_1, contacts.contact_phone_number_2
-                    FROM contacts
-                    LEFT JOIN patient_contact_relation
-                    ON patient_contact_relation.contact_id=contacts.contact_id
-                    WHERE patient_contact_relation.patient_id = ${data_request_id};` );
-                } )
-                .then( rows => {
-                    patient_contacts = rows;
                     return database.query( `SELECT doctors.doctor_first_name, doctors.doctor_last_name, doctors.doctor_office_address,patient_personal_doctors.personal_from_date,patient_personal_doctors.usual_visit_address , doctors.doctor_contact_number_1, doctors.doctor_contact_number_2
                     FROM doctors
                     LEFT JOIN patient_personal_doctors
