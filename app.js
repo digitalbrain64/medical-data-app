@@ -153,7 +153,6 @@ app.get('/getMedicalData', (req, res, next)=>{
                         patient_home_address : basic_data[0].patient_address,
                         patient_contact_number_1 : basic_data[0].patient_phone_number_1,
                         patient_contact_number_2 : basic_data[0].patient_phone_number_2,
-                        patient_contacts : patient_contacts,
                         patient_personal_doctors : patient_personal_doctors,
                         patient_med_prescriptions : patient_prescriptions,
                         patient_medical_notes : patient_notes,
