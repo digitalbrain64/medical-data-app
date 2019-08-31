@@ -21,10 +21,11 @@ app.get('/getAccessKey', (req, res, next)=>{
         request(url, (error, response, body)=>{
             if(!error && response.statusCode === 200){
                 var results = JSON.parse(body);
-                if(results.length == 0)
-                res.send([{
-                    error: "user not found"
-                }]);
+                if(results.length == 0){
+                    res.send([{
+                        error: "user not found"
+                    }]);
+                }
                 else{
                     console.log(results[0]);
                     if(results[0].user_priv != 5)
