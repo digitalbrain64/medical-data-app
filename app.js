@@ -61,7 +61,6 @@ app.get('/getMedicalData', (req, res, next)=>{
         var accessKey = req.query.key;
         var employee_email = req.query.e;
         var data_request_id = req.query.user_id;
-        var employee_access_password = req.query.p;
     
         var medicalRecord = [];
     
@@ -73,7 +72,7 @@ app.get('/getMedicalData', (req, res, next)=>{
         
         var database = new Database("mysql://bd60400816cf64:804ba615@us-cdbr-iron-east-02.cleardb.net/heroku_9a8e608802085ff?reconnect=true");
     
-        var sql = `SELECT * FROM temp_user_access WHERE access_email='${employee_email}' AND access_pass='${employee_access_password}' AND access_key='${accessKey}'`;
+        var sql = `SELECT * FROM temp_user_access WHERE access_email='${employee_email}' AND access_key='${accessKey}'`;
         mySqlPool.query(sql, function (error, result, fields) {
             if (error)
                 throw error;
