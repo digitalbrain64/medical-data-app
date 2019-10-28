@@ -29,9 +29,9 @@ app.get('/getAccessKey', (req, res, next)=>{
                 else{
                     console.log(results[0]);
                     if(results[0].user_priv != 5)
-                    res.send({
+                    res.send([{
                         error: "user does not have access to medical data"
-                    });
+                    }]);
                     else{
                         if(sendAccessKey(employee_email,employee_access_password));
                         res.send([{
